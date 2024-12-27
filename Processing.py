@@ -19,7 +19,7 @@ file_dir = 'raw'    # Location of raw EQ data
 write_path = 'EQ/'  # Location to save the processed EQ data
 
 for root, dirs, files in os.walk(file_dir):
-    for file in files:
+    for file in sorted(files):
         if os.path.splitext(file)[1] == '.EW':      ## East-West 
             ew = read(os.path.join(root, file))
 

@@ -19,7 +19,7 @@ from sklearn.metrics import precision_score
 from sklearn.metrics import f1_score
 
 ## Load the result, please change the file name
-data = pd.read_csv('result/CRNN_25hz_10s.csv', header=0)
+data = pd.read_csv('result/ANN_100hz_10s.csv', header=0)
 
 y_prob = data['prob_1']
 y_test = data['labels']
