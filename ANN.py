@@ -16,17 +16,14 @@ from sklearn.model_selection import train_test_split
 from sklearn.externals import joblib
 
 ##=========================== Process EQ data ===================================
-## Location of EQ data
-work_path = 'EQ'
+work_path = 'EQ'        ## Location of EQ data
+write_path = 'result/'  ## Location to save the result
 
-## Location to save the result
-write_path = 'result/'
+###====================Settings for different test cases======================###
+SamplingRate = 100      ## need to be changed, 25/50/100 (Hz)
+Duration = 10           ## need to be changed, 2/4/10 (second)
 
-###======Settings for different test cases======###
-SamplingRate = 100  # need to be changed, 25/50/100
-Duration = 10       # need to be changed, 2/4/10
-
-###=============================================###
+##===============================================================================
 
 WindowSize = 2 * SamplingRate
 original_SamplingRate = 100
@@ -73,12 +70,12 @@ for fn in files:
                 IQR = Q75 - Q25
             
                 ## ZC
-                ZCx=0
-                ZCy=0
-                ZCz=0
+                ZCx = 0
+                ZCy = 0
+                ZCz = 0
             
                 ## CAV
-                CAV=0
+                CAV = 0
                 for i in range(j,j+WindowSize-1):
                     if ((X_tg[i]<0) != (X_tg[i+1]<0)):
                         ZCx += 1
@@ -98,7 +95,7 @@ for fn in files:
 
 EQ_features = np.reshape(EQ_features, (int(len(EQ_features)/(Duration-1)), Duration-1, 3))
 
-##=========================== Process HumanActivity data ===================================
+##========================== Process Human Activity data ===========================
 ## Location of Non-Earthquake data
 work_path2 = 'NonEQ'
 HA_features = []
@@ -138,12 +135,12 @@ for root, dirs, files in os.walk(work_path2):
                     IQR = Q75 - Q25
                 
                     ## ZC
-                    ZCx=0
-                    ZCy=0
-                    ZCz=0
+                    ZCx = 0
+                    ZCy = 0
+                    ZCz = 0
                 
                     ## CAV
-                    CAV=0
+                    CAV = 0
                     for i in range(j,j+WindowSize-1):
                         if ((X_tg[i]<0) != (X_tg[i+1]<0)):
                             ZCx += 1
@@ -163,12 +160,11 @@ for root, dirs, files in os.walk(work_path2):
 
 HA_features = np.reshape(HA_features, (len(HA_features), 1, 3))
 
-### Split the data into training set and testing set
+##================== Split the data into training set and testing set ====================
 EQ_train, EQ_test = train_test_split(EQ_features, test_size=0.3, random_state=42)
-
 HA_train, HA_test = train_test_split(HA_features, test_size=0.3, random_state=42)
 
-# #=========================== k-means ===================================
+##==================================== K-means ===========================================
 EQ_train = np.reshape(EQ_train, (len(EQ_train)*(Duration-1), 3))
 EQ_train_y = np.ones(len(EQ_train))
 
@@ -200,7 +196,7 @@ HA_test_y = np.zeros(len(HA_test))
 ANN_test_X = np.vstack((EQ_test, HA_test))
 ANN_test_y = np.hstack((EQ_test_y, HA_test_y))
 
-# #=========================== ANN ===================================
+##===================================== ANN model ========================================
 ## Feature scaling
 min_max_scaler = preprocessing.MinMaxScaler()
 ANN_train_X = min_max_scaler.fit_transform(ANN_train_X)

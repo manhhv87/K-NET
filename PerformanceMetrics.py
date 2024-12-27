@@ -61,15 +61,16 @@ print(classification_report(y_test, y_pred, digits=4))
 print('Accuracy of the model on test set: {:.8f}'.format((confusionmatrix[0][0]+confusionmatrix[1][1])/np.sum(confusionmatrix)))
 
 ## Recall
-print('Recall',recall_score(y_test, y_pred, average='binary'))
+print('Recall', recall_score(y_test, y_pred, average='binary'))
 
 ## Precision
-print('Precision',precision_score(y_test, y_pred, average='binary'))
+print('Precision', precision_score(y_test, y_pred, average='binary'))
 
 ## False-alarm rate
 print('False-alarm rate:', confusionmatrix[0][1]/(confusionmatrix[0][0]+confusionmatrix[0][1]))
-# ## F1 score
-# print('F1:',f1_score(y_test, y_pred, average='binary'))
+
+## F1 score
+print('F1:', f1_score(y_test, y_pred, average='binary'))
 
 ## Plot ROC curve
 plt.figure()
@@ -81,8 +82,8 @@ plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
 plt.text(0.8, 0.1, 'AUROC: %0.4f'% roc_auc)
 plt.tight_layout()
-# plt.savefig('result/CRNN_25hz_10s_ROC.png', format='png', dpi=100)
-plt.show()
+plt.savefig('result/ANN_100hz_10s_ROC.png', format='png', dpi=100)
+# plt.show()
 
 ## Plot PR curve
 plt.figure()
@@ -94,5 +95,5 @@ plt.xlabel('Recall')
 plt.ylabel('Precision')
 plt.text(0.8, 0.1, 'AUPR: %0.4f'% pr_auc)
 plt.tight_layout()
-# plt.savefig('result/CRNN_25hz_10s_PR.png', format='png', dpi=100)
-plt.show()
+plt.savefig('result/ANN_100hz_10s_PR.png', format='png', dpi=100)
+# plt.show()

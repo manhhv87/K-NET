@@ -28,6 +28,7 @@ for root, dirs, files in os.walk(file_dir):
         
         if os.path.splitext(file)[1] == '.UD':      ## Up-Down
             ud = read(os.path.join(root, file))
+            
             tr_ew = ew[0]
             tr_ns = ns[0]
             tr_ud = ud[0]
@@ -45,6 +46,6 @@ for root, dirs, files in os.walk(file_dir):
             filename = os.path.splitext(file)[0]
 
             # Select the EQ records whose x-axis component PGA is greater than 0.1/0.05 [g]
-            # if np.max(data_ew) > 0.1:
-            if np.max(data_ew) > 0.05:
+            if np.max(data_ew) > 0.1:
+            # if np.max(data_ew) > 0.05:
                 np.savetxt(write_path + filename + '.txt', np.c_[data_ew,data_ns,data_ud])

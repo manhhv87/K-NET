@@ -14,15 +14,15 @@ from sklearn.cluster import KMeans
 from sklearn import preprocessing
 from sklearn.neural_network import MLPClassifier
 
-###=========================== Process EQ data ================================###
+##=========================== Process EQ data ===================================
 work_path = 'EQ'        ## Location of EQ data
 write_path = 'result/'  ## Location to save the result
 
-###====================Settings for different test cases=======================###
-SamplingRate = 100      # Need to be changed, 25/50/100
-Duration = 10           # Need to be changed, 2/4/10
+###====================Settings for different test cases======================###
+SamplingRate = 100      ## need to be changed, 25/50/100 (Hz)
+Duration = 10           ## need to be changed, 2/4/10 (second)
 
-###============================================================================###
+##===============================================================================
 
 WindowSize = 2 * SamplingRate
 original_SamplingRate = 100
@@ -69,12 +69,12 @@ for fn in files:
                 IQR = Q75 - Q25
 
                 ## ZC
-                ZCx=0
-                ZCy=0
-                ZCz=0
+                ZCx = 0
+                ZCy = 0
+                ZCz = 0
                 
                 ## CAV
-                CAV=0
+                CAV = 0
                 for i in range(j,j+WindowSize-1):
                     if ((X_tg[i]<0) != (X_tg[i+1]<0)):
                         ZCx += 1
@@ -94,7 +94,7 @@ for fn in files:
 
 EQ_features = np.reshape(EQ_features, (int(len(EQ_features)/(Duration-1)), Duration-1, 3))
 
-###=========================== Process HumanActivity data ==================================###
+##========================== Process Human Activity data ===========================
 ## Location of Non-Earthquake data
 work_path2 = 'NonEQ'
 HA_features = []
@@ -134,28 +134,32 @@ for root, dirs, files in os.walk(work_path2):
                     IQR = Q75 - Q25
                 
                     ## ZC
-                    ZCx=0
-                    ZCy=0
-                    ZCz=0
+                    ZCx = 0
+                    ZCy = 0
+                    ZCz = 0
                 
                     ## CAV
-                    CAV=0
+                    CAV = 0
                     for i in range(j,j+WindowSize-1):
                         if ((X_tg[i]<0) != (X_tg[i+1]<0)):
                             ZCx += 1
+
                         if ((Y_tg[i]<0) != (Y_tg[i+1]<0)):
                             ZCy += 1
+
                         if ((Z_tg[i]<0) != (Z_tg[i+1]<0)):
                             ZCz += 1
+
                         amp = (VS[i] + VS[i+1]) / 2.0
                         CAV += amp/SamplingRate
+
                     ZC = max(ZCx,ZCy,ZCz)
                     HA_feature = [IQR, ZC, CAV]
                     HA_features.append(HA_feature)
 
 HA_features = np.reshape(HA_features, (len(HA_features), 1, 3))
 
-###=========================== k-fold CV ===================================###
+##================================= K-fold CV ========================================
 kf = KFold(n_splits=10, shuffle=True, random_state=42)
 i = 0
 
@@ -163,15 +167,15 @@ for (train_index, test_index), (train_index2, test_index2) in zip(kf.split(EQ_fe
     EQ_train, EQ_test = EQ_features[train_index], EQ_features[test_index]
     HA_train, HA_test = HA_features[train_index2], HA_features[test_index2]
 
-    # #=========================== k-means ===================================
+    ##================================== K-means =====================================
     EQ_train = np.reshape(EQ_train, (len(EQ_train)*(Duration-1), 3))
     EQ_train_y = np.ones(len(EQ_train))
 
     HA_train = np.reshape(HA_train, (len(HA_train), 3))
 
     if len(EQ_train) < len(HA_train):
-        ## k-means clustering to balance the dataset
-        ## k-means clustering only runs when # of EQ instances < # of Human Activity instances
+        ## K-means clustering to balance the dataset
+        ## K-means clustering only runs when # of EQ instances < # of Human Activity instances
         kmeans = KMeans(n_clusters=len(EQ_train), random_state=42).fit(HA_train)
 
         HA_train_centroid = kmeans.cluster_centers_
@@ -195,16 +199,17 @@ for (train_index, test_index), (train_index2, test_index2) in zip(kf.split(EQ_fe
     ANN_test_X = np.vstack((EQ_test, HA_test))
     ANN_test_y = np.hstack((EQ_test_y, HA_test_y))
 
-    # #=========================== ANN ===================================
+    ##===================================== ANN model =======================================
     ## Feature scaling
     min_max_scaler = preprocessing.MinMaxScaler()
     ANN_train_X = min_max_scaler.fit_transform(ANN_train_X)
     ANN_test_X = min_max_scaler.transform(ANN_test_X)
 
-    ## ANN Training
+    ## ANN training
     mlp = MLPClassifier(hidden_layer_sizes=(5,), activation='logistic', solver='sgd', alpha=0, max_iter=10000, random_state=42, learning_rate_init=0.2)
     mlp.fit(ANN_train_X, ANN_train_y.ravel())
-    ## ANN Testing
+
+    ## ANN testing
     y_prob = mlp.predict_proba(ANN_test_X)
 
     ## Save the output prediction probability

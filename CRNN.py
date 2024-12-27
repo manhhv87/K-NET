@@ -11,17 +11,15 @@ import glob
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 
-# #=========================== Process EQ data ===================================
-## Location of EQ data
-work_path = 'EQ'
+##=========================== Process EQ data ===================================
+work_path = 'EQ'        ## Location of EQ data
+write_path = 'result/'  ## Location to save the result
 
-## Location to save the result
-write_path = 'result/'
+###====================Settings for different test cases======================###
+SamplingRate = 100      ## need to be changed, 25/50/100 (Hz)
+Duration = 10           ## need to be changed, 2/4/10 (second)
 
-###======Settings for different test cases======###
-SamplingRate = 25 # need to be changed, 25/50/100
-Duration = 2 # need to be changed, 2/4/10
-###============###
+##===============================================================================
 
 WindowSize = 2 * SamplingRate
 original_SamplingRate = 100
@@ -29,18 +27,23 @@ rate = original_SamplingRate/SamplingRate
 
 qry = work_path + '/*.txt'
 files = glob.glob(qry)
-X_EQ=[]
-Y_EQ=[]
-Z_EQ=[]
+
+X_EQ = []
+Y_EQ = []
+Z_EQ = []
+
 for fn in files:
     ## Load EQ data
     data = pd.read_csv(fn, sep=' ',names=['X','Y','Z'])
+
     ## Down-sampling
     data = data.iloc[0::int(rate)]
     data = data.reset_index(drop=True)
+    
     ## Find the peak of x-axis component
     X = data['X']
     X_peak = np.where(X == np.max(X))[0][0]
+    
     ## Select earthquake duration
     start = X_peak - int(SamplingRate)
     end = X_peak + int(SamplingRate) * (Duration - 1)
@@ -57,6 +60,7 @@ for fn in files:
             X_batch = X_tg[j:j+WindowSize]
             Y_batch = Y_tg[j:j+WindowSize]
             Z_batch = Z_tg[j:j+WindowSize]
+
             if len(X_batch) == WindowSize:
                 X_EQ.append(X_batch.values)
                 Y_EQ.append(Y_batch.values)
@@ -70,20 +74,23 @@ X_EQ = X_EQ.reshape(int(len(X_EQ)/(Duration-1)), Duration-1, WindowSize, 1)
 Y_EQ = Y_EQ.reshape(int(len(Y_EQ)/(Duration-1)), Duration-1, WindowSize, 1)
 Z_EQ = Z_EQ.reshape(int(len(Z_EQ)/(Duration-1)), Duration-1, WindowSize, 1)
 
-# #=========================== Process Non-Earthquake data ===================================
+##=========================== Process Non-Earthquake data ===================================
 ## Location of Non-Earthquake data
 work_path2 = 'NonEQ'
 
-X_HA=[]
-Y_HA=[]
-Z_HA=[]
+X_HA = []
+Y_HA = []
+Z_HA = []
+
 for root, dirs, files in os.walk(work_path2):
     for folders in dirs:
         qry2 = work_path2 + '/'+ folders + '/*.csv'
         files2 = glob.glob(qry2)
+
         for fn2 in files2:
             ## Load Non-EQ data
             data = pd.read_csv(fn2, header=0)
+
             ## Down-sampling
             df = data.iloc[0::int(rate)]
             df = df.reset_index(drop=True)
@@ -102,6 +109,7 @@ for root, dirs, files in os.walk(work_path2):
                 X_batch = X_tg[j:j+WindowSize]
                 Y_batch = Y_tg[j:j+WindowSize]
                 Z_batch = Z_tg[j:j+WindowSize]
+
                 if len(X_batch) == WindowSize:
                     X_HA.append(X_batch.values)
                     Y_HA.append(Y_batch.values)
@@ -115,7 +123,7 @@ X_HA = X_HA.reshape(X_HA.shape[0],X_HA.shape[1],1)
 Y_HA = Y_HA.reshape(Y_HA.shape[0],Y_HA.shape[1],1)
 Z_HA = Z_HA.reshape(Z_HA.shape[0],Z_HA.shape[1],1)
 
-### Split the data into training set and testing set
+## Split the data into training set and testing set
 indices = np.arange(len(X_EQ))
 X_EQ_train, X_EQ_test, train_index, test_index = train_test_split(X_EQ, indices, test_size=0.3, random_state=42)
 Y_EQ_train, Y_EQ_test = Y_EQ[train_index], Y_EQ[test_index]
@@ -135,7 +143,7 @@ X_HA_train, X_HA_test, train_index2, test_index2 = train_test_split(X_HA, indice
 Y_HA_train, Y_HA_test = Y_HA[train_index2], Y_HA[test_index2]
 Z_HA_train, Z_HA_test = Z_HA[train_index2], Z_HA[test_index2]
 
-# #=========================== CRNN ===================================
+##=========================== CRNN model ===================================
 ### CRNN Training
 EQ_X_train = np.dstack((X_EQ_train, Y_EQ_train, Z_EQ_train))
 HA_X_train = np.dstack((X_HA_train, Y_HA_train, Z_HA_train))
@@ -155,7 +163,7 @@ n_steps, n_length = 2, SamplingRate
 
 X_train = X_train.reshape((X_train.shape[0], n_steps, n_length, n_features))
 
-model=tf.keras.models.Sequential()
+model = tf.keras.models.Sequential()
 model.add(tf.keras.layers.TimeDistributed(tf.keras.layers.Conv1D(filters=64, kernel_size=3, activation='relu'), input_shape=(None,n_length,n_features)))
 model.add(tf.keras.layers.TimeDistributed(tf.keras.layers.Conv1D(filters=64, kernel_size=3, activation='relu')))
 model.add(tf.keras.layers.TimeDistributed(tf.keras.layers.Dropout(0.5)))
@@ -169,7 +177,7 @@ model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy']
 model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size, class_weight=class_weights, verbose=verbose)
 model.save(write_path + 'CRNN_%s'%SamplingRate + 'Hz_%s'%Duration +'s.h5')
 
-### CRNN Testing
+## CRNN testing
 EQ_X_test = np.dstack((X_EQ_test, Y_EQ_test, Z_EQ_test))
 HA_X_test = np.dstack((X_HA_test, Y_HA_test, Z_HA_test))
 
